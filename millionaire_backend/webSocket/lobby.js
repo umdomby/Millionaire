@@ -8,7 +8,6 @@ class Lobby {
         setInterval(()=> this.getWsClients(aWss), 5000);
     };
 
-
     diff(a, b) {
         return a.filter(function(i) {return b.indexOf(i) < 0;});
     };
@@ -28,11 +27,20 @@ class Lobby {
             let users = this.diff(userMessage, clientsNoRepeatUsers)
             for(let i = 0; i < users.length; i++){
                 await Connection.deleteMany({user: users[i]});
+                await Message.deleteMany({user: users[i]});
             }
         }
-
         aWss.clients.forEach(client => {
             client.send(JSON.stringify({method: 'online', clientsNoRepeatUsers}));
+        })
+        await this.messages(aWss)
+    }
+
+    async messages(aWss) {
+        await Message.find().then(messages => {
+            aWss.clients.forEach(client => {
+                client.send(JSON.stringify({method: 'messages', messages: messages}));
+            })
         })
     }
 
@@ -71,22 +79,14 @@ class Lobby {
             case "messages":
                 const message = new Message({ messages: msg.messages, user: msg.username});
                 await message.save();
-                await Message.find().then(messages2 => {
-                    aWss.clients.forEach(client => {
-                        client.send(JSON.stringify({method:'messages', messages: messages2}));
-                    })
-                })
+                await this.messages(aWss)
                 break
             case "close":
                 this.delWsClients(aWss, msg.username);
                 await Connection.deleteMany({user: msg.username});
                 await Message.deleteMany({user: msg.username});
-                await Message.find().then(messages2 => {
-                    aWss.clients.forEach(client => {
-                        client.send(JSON.stringify({method:'messages', messages: messages2}));
-                    })
-                })
-                 break
+                await this.messages(aWss)
+                break
         }
     }
 
