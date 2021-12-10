@@ -1,4 +1,4 @@
-import React, {useContext, useEffect, useRef, useState} from 'react';
+import React, {useContext, useState} from 'react';
 import {Context} from "../index";
 import {Button} from "react-bootstrap";
 
@@ -11,15 +11,13 @@ const WebSocketProject = () => {
     const [hideConnect, setHideConnect] = useState(false);
     const [renderUsername, setRenderUsername] = useState('');
 
-    useEffect(() => {
-        setInterval(() => socketTest(), 5000)
-    }, [])
 
     const connect = () => {
         wsConnect(device.username)
         device.setClose(false)
         device.setConnected(true)
         setHideConnect(true)
+        setInterval(() => socketTest(), 5000)
     }
 
     const close = () => {
